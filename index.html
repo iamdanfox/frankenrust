@@ -4,8 +4,10 @@
     <title>Hello World!</title>
     <script>
 
-    var ffi = require('ffi')
-    console.log(ffi);
+    var backend = require('ffi').Library('./backend/target/debug/libstringtools-33413ce5f47aa5d5.dylib', {
+      "simple": [ "int", [] ]
+    });
+    console.log("Rust called from JS: " + backend.simple());
 
     </script>
   </head>

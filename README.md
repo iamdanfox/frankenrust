@@ -251,6 +251,12 @@ Nope, apparently not.
     at Module.load (module.js:346:32)
 ```
 Apparently, the libraries involving native code need to be [compiled specifically](https://github.com/nwjs/nw.js/issues/723) for nw.js.
+
+> The reason these modules needs to be recompiled is that nw.js has a different ABI (Application Binary Interface) than node.js.
+> In a normal node.js project, when you run `npm install ffi`, npm downloads the source for ffi and then compiles the C/C++
+> specifically for your machine using a tool called `node-gyp`.  In order to make them compatible with nw.js, we have to go
+> into the directory and recompile them to target the exact version of nw.js. [[Read more](https://github.com/nwjs/nw.js/wiki/Using-Node-modules#3rd-party-modules-with-cc-addons)]
+
 The tool we need is `nw-gyp`.  Let's give it a shot:
 
     npm install -g nw-gyp
@@ -258,4 +264,42 @@ The tool we need is `nw-gyp`.  Let's give it a shot:
     nw-gyp configure --target=0.12.1
     nw-gyp build
 
-This looks optimistic so far. Back in the root directory however, `npm start` still gives us the same error.
+This looks optimistic so far. Back in the root directory however, `npm start` gives us the same error.  Looking more closely, I noticed that one of the files mentioned was in `/Users/danfox/frankenrust/node_modules/ffi/node_modules/ref/`.  This suggests that `ffi` has a dependency, `ref`, that we also need to recompile with nw-gyp.
+
+    cd ./node_modules/ffi/node_modules/ref
+    nw-gyp configure --target=0.12.1
+    nw-gyp build
+
+Everything seems to run OK, so back in our root I cross my fingers and run `npm start`. Success!
+
+To actually use this lovely foreign function interface, javascript needs to know the type signatures
+of any Rust code we are calling.  The [Node FFI Tutorial](https://github.com/node-ffi/node-ffi/wiki/Node-FFI-Tutorial) has a nice little example, so I adjusted `index.html` to now look like this:
+
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Hello World!</title>
+        <script>
+
+        var backend = require('ffi').Library('./backend/target/debug/libstringtools-33413ce5f47aa5d5.dylib', {
+          "simple": [ "int", [] ]
+        });
+        console.log("Rust called from JS: " + backend.simple());
+
+        </script>
+      </head>
+      <body>
+        <script src="./node_modules/react/dist/react.js"></script>
+        <script>
+        var HelloMessage = React.createClass({displayName: "HelloMessage",
+          render: function() {
+            return React.createElement("div", null, "Hello ", this.props.name);
+          }
+        });
+
+        React.render(React.createElement(HelloMessage, {name: "John"}), document.body);
+        </script>
+      </body>
+    </html>
+
+It works perfectly!
