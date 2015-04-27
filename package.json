@@ -10,7 +10,9 @@
   "author": "iamdanfox",
   "license": "MIT",
   "dependencies": {
+    "ffi": "^1.3.1",
     "nw": "^0.12.1",
+    "nw-gyp": "^0.12.4",
     "react": "^0.13.2"
   },
   "window": {

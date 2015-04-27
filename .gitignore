@@ -1,2 +1,4 @@
 node_modules
 backend/target
+
+build/config.gypi

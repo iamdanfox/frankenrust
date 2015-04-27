@@ -71,20 +71,20 @@ Let's try a trivial proof of concept:
     </script>
 
 Nope, looks like that was a bit naive.
-
-    [90357:0427/153208:ERROR:nw_shell.cc(335)] ReferenceError: document is not defined
-    at Object.<anonymous> (/Users/danfox/frankenrust/node_modules/react/lib/CSSPropertyOperations.js:31:7)
-    at Module._compile (module.js:451:26)
-    at Object.Module._extensions..js (module.js:469:10)
-    at Module.load (module.js:346:32)
-    at Function.Module._load (module.js:301:12)
-    at Module.require (module.js:356:17)
-    at require (module.js:375:17)
-    at Object.<anonymous> (/Users/danfox/frankenrust/node_modules/react/lib/ReactDOMIDOperations.js:17:29)
-    at Module._compile (module.js:451:26)
-    at Object.Module._extensions..js (module.js:469:10)
-
-I skim the wiki page on [Differences of JavaScript contexts][https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts].  Strange that React isn't working under nw.js's node context. Nevermind, we'll stick to browser dev.  Lightly tweaking an example from from the React homepage, `index.html` now looks like:
+```
+[90357:0427/153208:ERROR:nw_shell.cc(335)] ReferenceError: document is not defined
+at Object.<anonymous> (/Users/danfox/frankenrust/node_modules/react/lib/CSSPropertyOperations.js:31:7)
+at Module._compile (module.js:451:26)
+at Object.Module._extensions..js (module.js:469:10)
+at Module.load (module.js:346:32)
+at Function.Module._load (module.js:301:12)
+at Module.require (module.js:356:17)
+at require (module.js:375:17)
+at Object.<anonymous> (/Users/danfox/frankenrust/node_modules/react/lib/ReactDOMIDOperations.js:17:29)
+at Module._compile (module.js:451:26)
+at Object.Module._extensions..js (module.js:469:10)
+```
+I skim the wiki page on [Differences of JavaScript contexts](https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).  Strange that React isn't working under nw.js's node context. Nevermind, we'll stick to browser dev.  Lightly tweaking an example from from the React homepage, `index.html` now looks like:
 
     <!DOCTYPE html>
     <html>
@@ -127,29 +127,29 @@ This gives us a nice starting point:
     1 directory, 2 files
 
 I want this Rust code to be externally callable, so I consult Google and find <http://siciarz.net/24-days-of-rust-calling-rust-from-other-languages/>.  lib.rs now contains:
+```rs
+extern crate libc;
 
-    extern crate libc;
+use std::c_str::CString;
+use libc::c_char;
 
-    use std::c_str::CString;
-    use libc::c_char;
-
-    #[no_mangle]
-    pub extern "C" fn count_substrings(value: *const c_char, substr: *const c_char) -> i32 {
-        let c_value = unsafe { CString::new(value, false) };
-        let c_substr = unsafe { CString::new(substr, false) };
-        match c_value.as_str() {
-            Some(value) => match c_substr.as_str() {
-                Some(substr) => value.match_indices(substr).count() as i32,
-                None => -1,
-            },
+#[no_mangle]
+pub extern "C" fn count_substrings(value: *const c_char, substr: *const c_char) -> i32 {
+    let c_value = unsafe { CString::new(value, false) };
+    let c_substr = unsafe { CString::new(substr, false) };
+    match c_value.as_str() {
+        Some(value) => match c_substr.as_str() {
+            Some(substr) => value.match_indices(substr).count() as i32,
             None => -1,
-        }
+        },
+        None => -1,
     }
+}
 
-    #[test]
-    fn it_works() {
-    }
-
+#[test]
+fn it_works() {
+}
+```
 And Cargo.toml:
 
     [package]
@@ -215,3 +215,47 @@ To check that dylib actually works, I fire up a python REPL:
     1234
 
 Magic.
+
+Calling Rust from Node.js
+-------------------------
+
+First things first, we need the [foreign function interface](https://www.npmjs.com/package/ffi) for node:
+
+    npm install --save ffi
+
+Adding a few lines to `index.html` will tell us whether this worked:
+
+    <head>
+      <title>Hello World!</title>
+      <script>
+
+      var ffi = require('ffi')
+      console.log(ffi);
+
+      </script>
+    </head>
+    ...
+
+Nope, apparently not.
+```
+[1628:0427/171035:ERROR:nw_shell.cc(335)] Error: Module did not self-register.
+    at Error (native)
+    at Module.load (module.js:346:32)
+    at Function.Module._load (module.js:301:12)
+    at Module.require (module.js:356:17)
+    at require (module.js:375:17)
+    at bindings (/Users/danfox/frankenrust/node_modules/ffi/node_modules/bindings/bindings.js:76:44)
+    at Object.<anonymous> (/Users/danfox/frankenrust/node_modules/ffi/node_modules/ref/lib/ref.js:5:47)
+    at Module._compile (module.js:451:26)
+    at Object.Module._extensions..js (module.js:469:10)
+    at Module.load (module.js:346:32)
+```
+Apparently, the libraries involving native code need to be [compiled specifically](https://github.com/nwjs/nw.js/issues/723) for nw.js.
+The tool we need is `nw-gyp`.  Let's give it a shot:
+
+    npm install -g nw-gyp
+    cd node_modules/ffi
+    nw-gyp configure --target=0.12.1
+    nw-gyp build
+
+This looks optimistic so far. Back in the root directory however, `npm start` still gives us the same error.
