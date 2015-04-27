@@ -10,6 +10,10 @@
   "author": "iamdanfox",
   "license": "MIT",
   "dependencies": {
-    "nw": "^0.12.1"
+    "nw": "^0.12.1",
+    "react": "^0.13.2"
+  },
+  "window": {
+    "toolbar": false
   }
 }

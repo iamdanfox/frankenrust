@@ -4,7 +4,15 @@
     <title>Hello World!</title>
   </head>
   <body>
-    <h1>Hello World!</h1>
-    We are using node.js <script>document.write(process.version)</script>.
+    <script src="./node_modules/react/dist/react.js"></script>
+    <script>
+    var HelloMessage = React.createClass({displayName: "HelloMessage",
+      render: function() {
+        return React.createElement("div", null, "Hello ", this.props.name);
+      }
+    });
+
+    React.render(React.createElement(HelloMessage, {name: "John"}), document.body);
+    </script>
   </body>
 </html>
