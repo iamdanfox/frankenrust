@@ -1,0 +1,8 @@
+[package]
+name = "backend"
+version = "0.1.0"
+authors = ["Dan Fox <iamdanfox@gmail.com>"]
+
+[lib]
+name = "stringtools"
+crate-type = ["dylib"]

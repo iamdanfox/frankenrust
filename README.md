@@ -105,6 +105,113 @@ I skim the wiki page on [Differences of JavaScript contexts][https://github.com/
       </body>
     </html>
 
+Time for Rust
+-------------
 
+My nightly install of Rust looks a little out of date, so let's fix that first:
 
+    curl -s https://static.rust-lang.org/rustup.sh | sudo sh -s -- --channel=nightly
 
+While that's chugging away, we can get the rust boilerplate going.
+
+    cargo new backend
+    cd backend
+
+This gives us a nice starting point:
+
+    .
+    ├── Cargo.toml
+    └── src
+        └── lib.rs
+
+    1 directory, 2 files
+
+I want this Rust code to be externally callable, so I consult Google and find <http://siciarz.net/24-days-of-rust-calling-rust-from-other-languages/>.  lib.rs now contains:
+
+    extern crate libc;
+
+    use std::c_str::CString;
+    use libc::c_char;
+
+    #[no_mangle]
+    pub extern "C" fn count_substrings(value: *const c_char, substr: *const c_char) -> i32 {
+        let c_value = unsafe { CString::new(value, false) };
+        let c_substr = unsafe { CString::new(substr, false) };
+        match c_value.as_str() {
+            Some(value) => match c_substr.as_str() {
+                Some(substr) => value.match_indices(substr).count() as i32,
+                None => -1,
+            },
+            None => -1,
+        }
+    }
+
+    #[test]
+    fn it_works() {
+    }
+
+And Cargo.toml:
+
+    [package]
+    name = "backend"
+    version = "0.1.0"
+    authors = ["Dan Fox <iamdanfox@gmail.com>"]
+
+    [lib]
+    name = "stringtools"
+    crate-type = ["dylib"]
+
+I run `cargo build` and immediately hit an error:
+
+    Compiling backend v0.1.0 (file:///Users/danfox/frankenrust/backend)
+    src/lib.rs:3:5: 3:24 error: unresolved import `std::c_str::CString`. Could not find `c_str` in `std`
+    src/lib.rs:3 use std::c_str::CString;
+                     ^~~~~~~~~~~~~~~~~~~
+    error: aborting due to previous error
+    Could not compile `backend`.
+
+    To learn more, run the command again with --verbose.
+
+Since Zbigniew's article was written in Dec 2014 (with pre-beta Rust), I hazard a guess that `std` has changed.  Drastic simplification time:
+
+    #![feature(libc)]
+
+    extern crate libc;
+
+    #[no_mangle]
+    pub extern "C" fn simple() -> i32 {
+        1234
+    }
+
+    #[test]
+    fn it_works() {
+    }
+
+`cargo build` works perfectly this time.  There are now a bunch of exciting files in the `target` directory:
+
+    .
+    └── debug
+        ├── build
+        ├── deps
+        ├── examples
+        ├── libstringtools-33413ce5f47aa5d5.dylib
+        ├── libstringtools-33413ce5f47aa5d5.dylib.dSYM
+        │   └── Contents
+        │       ├── Info.plist
+        │       └── Resources
+        │           └── DWARF
+        │               └── libstringtools-33413ce5f47aa5d5.dylib
+        └── native
+
+    9 directories, 3 files
+
+To check that dylib actually works, I fire up a python REPL:
+
+    Python 2.7.9 (default, Jan  7 2015, 11:49:12)
+    [GCC 4.2.1 Compatible Apple LLVM 6.0 (clang-600.0.56)] on darwin
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> import ctypes
+    >>> ctypes.CDLL('./target/debug/libstringtools-33413ce5f47aa5d5.dylib').simple()
+    1234
+
+Magic.
