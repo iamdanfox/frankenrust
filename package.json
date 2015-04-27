@@ -1,0 +1,15 @@
+{
+  "name": "frankenrust",
+  "version": "1.0.0",
+  "description": "frankenrust",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nw"
+  },
+  "author": "iamdanfox",
+  "license": "MIT",
+  "dependencies": {
+    "nw": "^0.12.1"
+  }
+}
