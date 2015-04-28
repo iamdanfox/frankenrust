@@ -6,3 +6,6 @@ authors = ["Dan Fox <iamdanfox@gmail.com>"]
 [lib]
 name = "stringtools"
 crate-type = ["dylib"]
+
+[dependencies]
+mio = "0.3.0"

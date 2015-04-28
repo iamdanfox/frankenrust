@@ -333,3 +333,20 @@ Debugging nw.js
 So far, debugging has been limited to `console.log` in the terminal and Ctrl-C-ing to restart things.  nw.js actually supports a remote Chrome Inspector using the `--remote--debuggin-port` flag.  I try `npm run debug` and navigate to <http://localhost:9222>. This beautiful sight greets me:
 
 ![Inspector screenshot](http://i.imgur.com/ZJbMK5C.png)
+
+
+Multi-threading
+---------------
+
+I want the Rust backend to be able to handle intensive tasks (like wrangling a large Git repo) without blocking the javascript frontend.  
+
+This means that requests to the backend must be asynchronous from javascript's perspective. Pure FFI calls are probably not going to cut it.
+
+On a whim and a prayer, I decide to try using Unix sockets.  They sound ideal for a client - server architecture!
+
+I stumble upon [`rust-unix-socket`](https://github.com/sfackler/rust-unix-socket). Unfortunately, documentation is very sparse and there are no examples or tests for me to start with :(. I'll give [MIO](https://github.com/carllerche/mio) a try. I add the following to my Cargo.toml.
+
+    [dependencies]
+    mio = "0.3.0"
+
+Things seem to compile
