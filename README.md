@@ -8,7 +8,7 @@ The plan is to use nw.js to make a native-looking app with React.
 Gettings started with nw.js
 ---------------------------
 
-Navigate to <nwjs.io> not much of a quickstart there, so I head to the GitHub repo <https://github.com/nwjs/nw.js/>.  Looks like we will need the usual package.json boilerplate. I run `npm init` and hit enter a few times.
+The <http://nwjs.io> homepage looks quite sparse, so I head to the GitHub repo <https://github.com/nwjs/nw.js/>.  I'll need the usual package.json boilerplate, so I run `npm init` and hit enter a few times.
 
     {
       "name": "frankenrust",
@@ -33,18 +33,18 @@ Following the recommendation from <https://www.npmjs.com/package/nw>, I add a st
     }
 
 I copy the `index.html` from the nw.js quickstart and update the `package.json` main field to be `index.html`.
-
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Hello World!</title>
-      </head>
-      <body>
-        <h1>Hello World!</h1>
-        We are using node.js <script>document.write(process.version)</script>.
-      </body>
-    </html>
-
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hello World!</title>
+  </head>
+  <body>
+    <h1>Hello World!</h1>
+    We are using node.js <script>document.write(process.version)</script>.
+  </body>
+</html>
+```
 The moment of truth.  I run `npm start` and this beauty appears. Time to commit.
 
 ![Hello world screenshot](http://i.imgur.com/PHjvq46.png?1)
@@ -52,7 +52,7 @@ The moment of truth.  I run `npm start` and this beauty appears. Time to commit.
 React
 -----
 
-That browser chrome is a bit of a let-down, I wanted something native looking!
+That browser chrome is a bit of a let-down, I want something native looking!
 
 <https://github.com/nwjs/nw.js/wiki/Frameless-window> has some recommendations, so I add the following to package.json
 
@@ -61,15 +61,15 @@ That browser chrome is a bit of a let-down, I wanted something native looking!
     }
 
 Bingo.  Time to get React involved.
-
-    npm install --save react
-
+```
+npm install --save react
+```
 Let's try a trivial proof of concept:
-
-    <script>
-      var React = require('react')
-    </script>
-
+```html
+<script>
+  var React = require('react')
+</script>
+```
 Nope, looks like that was a bit naive.
 ```
 [90357:0427/153208:ERROR:nw_shell.cc(335)] ReferenceError: document is not defined
@@ -84,35 +84,35 @@ at Object.<anonymous> (/Users/danfox/frankenrust/node_modules/react/lib/ReactDOM
 at Module._compile (module.js:451:26)
 at Object.Module._extensions..js (module.js:469:10)
 ```
-I skim the wiki page on [Differences of JavaScript contexts](https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).  Strange that React isn't working under nw.js's node context. Nevermind, we'll stick to browser dev.  Lightly tweaking an example from from the React homepage, `index.html` now looks like:
+I skim the wiki page on [Differences of JavaScript contexts](https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).  Strange that React isn't working under nw.js's node context. Nevermind, we'll stick to browser dev.  Lightly tweaking an example from from the React homepage, I update `index.html` to look like this:
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hello World!</title>
+  </head>
+  <body>
+    <script src="./node_modules/react/dist/react.js"></script>
+    <script>
+    var HelloMessage = React.createClass({displayName: "HelloMessage",
+      render: function() {
+        return React.createElement("div", null, "Hello ", this.props.name);
+      }
+    });
 
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Hello World!</title>
-      </head>
-      <body>
-        <script src="./node_modules/react/dist/react.js"></script>
-        <script>
-        var HelloMessage = React.createClass({displayName: "HelloMessage",
-          render: function() {
-            return React.createElement("div", null, "Hello ", this.props.name);
-          }
-        });
-
-        React.render(React.createElement(HelloMessage, {name: "John"}), document.body);
-        </script>
-      </body>
-    </html>
-
+    React.render(React.createElement(HelloMessage, {name: "John"}), document.body);
+    </script>
+  </body>
+</html>
+```
 Time for Rust
 -------------
 
-My nightly install of Rust looks a little out of date, so let's fix that first:
+My nightly install of Rust looks a little out of date, so I fix that first:
 
     curl -s https://static.rust-lang.org/rustup.sh | sudo sh -s -- --channel=nightly
 
-While that's chugging away, we can get the rust boilerplate going.
+While that's chugging away, I start on the rest of the rust boilerplate.
 
     cargo new backend
     cd backend
@@ -127,6 +127,7 @@ This gives us a nice starting point:
     1 directory, 2 files
 
 I want this Rust code to be externally callable, so I consult Google and find <http://siciarz.net/24-days-of-rust-calling-rust-from-other-languages/>.  lib.rs now contains:
+
 ```rs
 extern crate libc;
 
@@ -150,6 +151,7 @@ pub extern "C" fn count_substrings(value: *const c_char, substr: *const c_char) 
 fn it_works() {
 }
 ```
+
 And Cargo.toml:
 
     [package]
@@ -174,20 +176,22 @@ I run `cargo build` and immediately hit an error:
 
 Since Zbigniew's article was written in Dec 2014 (with pre-beta Rust), I hazard a guess that `std` has changed.  Drastic simplification time:
 
-    #![feature(libc)]
+```rs
+#![feature(libc)]
 
-    extern crate libc;
+extern crate libc;
 
-    #[no_mangle]
-    pub extern "C" fn simple() -> i32 {
-        1234
-    }
+#[no_mangle]
+pub extern "C" fn simple() -> i32 {
+    1234
+}
 
-    #[test]
-    fn it_works() {
-    }
+#[test]
+fn it_works() {
+}
+```
 
-`cargo build` works perfectly this time.  There are now a bunch of exciting files in the `target` directory:
+`cargo build` works perfectly this time.  The `target` directory has a bunch of files now:
 
     .
     └── debug
@@ -219,24 +223,27 @@ Magic.
 Calling Rust from Node.js
 -------------------------
 
-First things first, we need the [foreign function interface](https://www.npmjs.com/package/ffi) for node:
+First things first, I need the [foreign function interface](https://www.npmjs.com/package/ffi) for node:
 
     npm install --save ffi
 
-Adding a few lines to `index.html` will tell us whether this worked:
+I add a few lines to `index.html` to see whether it worked:
 
-    <head>
-      <title>Hello World!</title>
-      <script>
+```html
+<head>
+  <title>Hello World!</title>
+  <script>
 
-      var ffi = require('ffi')
-      console.log(ffi);
+  var ffi = require('ffi')
+  console.log(ffi);
 
-      </script>
-    </head>
-    ...
+  </script>
+</head>
+...
+```
 
 Nope, apparently not.
+
 ```
 [1628:0427/171035:ERROR:nw_shell.cc(335)] Error: Module did not self-register.
     at Error (native)
@@ -250,6 +257,7 @@ Nope, apparently not.
     at Object.Module._extensions..js (module.js:469:10)
     at Module.load (module.js:346:32)
 ```
+
 Apparently, the libraries involving native code need to be [compiled specifically](https://github.com/nwjs/nw.js/issues/723) for nw.js.
 
 > The reason these modules needs to be recompiled is that nw.js has a different ABI (Application Binary Interface) than node.js.
@@ -257,57 +265,59 @@ Apparently, the libraries involving native code need to be [compiled specificall
 > specifically for your machine using a tool called `node-gyp`.  In order to make them compatible with nw.js, we have to go
 > into the directory and recompile them to target the exact version of nw.js. [[Read more](https://github.com/nwjs/nw.js/wiki/Using-Node-modules#3rd-party-modules-with-cc-addons)]
 
-The tool we need is `nw-gyp`.  Let's give it a shot:
+The tool we need is `nw-gyp`.
 
     npm install -g nw-gyp
     cd node_modules/ffi
     nw-gyp configure --target=0.12.1
     nw-gyp build
 
-This looks optimistic so far. Back in the root directory however, `npm start` gives us the same error.  Looking more closely, I noticed that one of the files mentioned was in `/Users/danfox/frankenrust/node_modules/ffi/node_modules/ref/`.  This suggests that `ffi` has a dependency, `ref`, that we also need to recompile with nw-gyp.
+This looks optimistic so far. Back in the root directory however, `npm start` gives me the same error.  Looking more closely, I notice that one of the files mentioned was in `/frankenrust/node_modules/ffi/node_modules/ref/`.  It looks like `ffi` has a dependency, `ref`, that I also need to recompile with nw-gyp.
 
     cd ./node_modules/ffi/node_modules/ref
     nw-gyp configure --target=0.12.1
     nw-gyp build
 
-Everything seems to run OK, so back in our root I cross my fingers and run `npm start`. Success!
+Everything seems to run OK, so back in the project root I cross my fingers and run `npm start`. Success!
 
 To actually use this lovely foreign function interface, javascript needs to know the type signatures
-of any Rust code we are calling.  The [Node FFI Tutorial](https://github.com/node-ffi/node-ffi/wiki/Node-FFI-Tutorial) has a nice little example, so I adjusted `index.html` to now look like this:
+of any Rust code I'm calling.  The [Node FFI Tutorial](https://github.com/node-ffi/node-ffi/wiki/Node-FFI-Tutorial) has a nice little example, so I adjust `index.html` to now look like this:
 
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Hello World!</title>
-        <script>
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hello World!</title>
+    <script>
 
-        var backend = require('ffi').Library('./backend/target/debug/libstringtools-33413ce5f47aa5d5.dylib', {
-          "simple": [ "int", [] ]
-        });
-        console.log("Rust called from JS: " + backend.simple());
+    var backend = require('ffi').Library('./backend/target/debug/libstringtools-33413ce5f47aa5d5.dylib', {
+      "simple": [ "int", [] ]
+    });
+    console.log("Rust called from JS: " + backend.simple());
 
-        </script>
-      </head>
-      <body>
-        <script src="./node_modules/react/dist/react.js"></script>
-        <script>
-        var HelloMessage = React.createClass({displayName: "HelloMessage",
-          render: function() {
-            return React.createElement("div", null, "Hello ", this.props.name);
-          }
-        });
+    </script>
+  </head>
+  <body>
+    <script src="./node_modules/react/dist/react.js"></script>
+    <script>
+    var HelloMessage = React.createClass({displayName: "HelloMessage",
+      render: function() {
+        return React.createElement("div", null, "Hello ", this.props.name);
+      }
+    });
 
-        React.render(React.createElement(HelloMessage, {name: "John"}), document.body);
-        </script>
-      </body>
-    </html>
+    React.render(React.createElement(HelloMessage, {name: "John"}), document.body);
+    </script>
+  </body>
+</html>
+```
 
 It works perfectly!
 
 Some Housekeeping
 -----------------
 
-That thing about React not working in a node.js context annoyed me, so I did some more Googling.  It turns out
+That thing about React not working in a node.js context annoyed me, so I consult Google.  It turns out
 that nw.js's `window.document` object isn't accessible as a global `document`.  Something in React is calling this, so it's trivial to remedy this:
 
 ```js
@@ -320,6 +330,6 @@ Also, for a decent-sized React app, I really want to be able to write components
 Debugging nw.js
 ---------------
 
-So far, debugging has been limited to `console.log` in the terminal and Ctrl-C-ing to restart things.  nw.js actually supports a remote Chrome Inspector using the `--remote--debuggin-port` flag.  Running `npm run debug` and then navigating to <http://localhost:9222> sets up a whole beautiful inspector.
+So far, debugging has been limited to `console.log` in the terminal and Ctrl-C-ing to restart things.  nw.js actually supports a remote Chrome Inspector using the `--remote--debuggin-port` flag.  I try `npm run debug` and navigate to <http://localhost:9222>. This beautiful sight greets me:
 
-[Inspector screenshot](http://i.imgur.com/ZJbMK5C.png)
+![Inspector screenshot](http://i.imgur.com/ZJbMK5C.png)
