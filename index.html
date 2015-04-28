@@ -3,24 +3,21 @@
   <head>
     <title>Hello World!</title>
     <script>
+    require('node-jsx').install();
 
     var backend = require('ffi').Library('./backend/target/debug/libstringtools-33413ce5f47aa5d5.dylib', {
       "simple": [ "int", [] ]
     });
     console.log("Rust called from JS: " + backend.simple());
 
+    // make require('react') happy
+    global.document = window.document;
+    global.navigator = window.navigator;
+
+    var React = require('react');
+    var App = require('./frontend/HelloWorld.jsx');
+
     </script>
   </head>
-  <body>
-    <script src="./node_modules/react/dist/react.js"></script>
-    <script>
-    var HelloMessage = React.createClass({displayName: "HelloMessage",
-      render: function() {
-        return React.createElement("div", null, "Hello ", this.props.name);
-      }
-    });
-
-    React.render(React.createElement(HelloMessage, {name: "John"}), document.body);
-    </script>
-  </body>
+  <body onload="React.render(App, document.body);"></body>
 </html>

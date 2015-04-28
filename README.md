@@ -303,3 +303,23 @@ of any Rust code we are calling.  The [Node FFI Tutorial](https://github.com/nod
     </html>
 
 It works perfectly!
+
+Some Housekeeping
+-----------------
+
+That thing about React not working in a node.js context annoyed me, so I did some more Googling.  It turns out
+that nw.js's `window.document` object isn't accessible as a global `document`.  Something in React is calling this, so it's trivial to remedy this:
+
+```js
+global.document = window.document;
+global.navigator = window.navigator; // React also needs the `navigator` object
+```
+
+Also, for a decent-sized React app, I really want to be able to write components in JSX rather than longhand javascript.  The `node-jsx` module looks decent.  It seems quite slow, but will do for development purposes!
+
+Debugging nw.js
+---------------
+
+So far, debugging has been limited to `console.log` in the terminal and Ctrl-C-ing to restart things.  nw.js actually supports a remote Chrome Inspector using the `--remote--debuggin-port` flag.  Running `npm run debug` and then navigating to <http://localhost:9222> sets up a whole beautiful inspector.
+
+[Inspector screenshot](http://i.imgur.com/ZJbMK5C.png)
