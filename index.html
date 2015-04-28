@@ -3,12 +3,8 @@
   <head>
     <title>Hello World!</title>
     <script>
-    require('node-jsx').install();
 
-    var backend = require('ffi').Library('./backend/target/debug/libstringtools-33413ce5f47aa5d5.dylib', {
-      "simple": [ "int", [] ]
-    });
-    console.log("Rust called from JS: " + backend.simple());
+    require('node-jsx').install();
 
     // make require('react') happy
     global.document = window.document;
